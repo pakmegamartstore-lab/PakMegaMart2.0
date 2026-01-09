@@ -1,0 +1,989 @@
+<!DOCTYPE html>
+<html lang="en" class="antialiased">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PakMegaMart</title>
+    
+    <!-- Fonts: Bodoni Moda (Editorial) & Geist (Technical) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:opsz,wght@6..96,400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    
+    <!-- Icons: Phosphor -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Vue 3 -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+
+    <!-- EmailJS SDK -->
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
+
+    <!-- Lenis Smooth Scroll -->
+    <script src="https://cdn.jsdelivr.net/gh/studio-freight/lenis@1.0.29/bundled/lenis.min.js"></script>
+
+    <!-- Config -->
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        canvas: '#F4F4F4', // Vapor Grey
+                        ink: '#1A1A1A',    // Near Black
+                        leather: '#4A2C2A', // Oxblood
+                        whiskey: '#8B5A2B',
+                        gold: '#D4AF37',
+                        'dark-canvas': '#0F0F0F',
+                    },
+                    fontFamily: {
+                        serif: ['"Bodoni Moda"', 'serif'],
+                        sans: ['"Inter"', 'sans-serif'],
+                    },
+                    backgroundImage: {
+                        'grain': "url('data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.65%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22 opacity=%220.05%22/%3E%3C/svg%3E')",
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Base Luxury Styles */
+        body {
+            background-color: #F4F4F4;
+            color: #1A1A1A;
+            transition: background-color 0.5s ease, color 0.5s ease;
+        }
+        
+        .dark body {
+            background-color: #0F0F0F;
+            color: #E5E5E5;
+        }
+
+        /* Hide Scrollbar but allow scroll */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #D4AF37;
+            border-radius: 3px;
+        }
+
+        /* Text Selection */
+        ::selection {
+            background: #4A2C2A;
+            color: #D4AF37;
+        }
+
+        /* Utility Classes */
+        .text-balance { text-wrap: balance; }
+        
+        /* Loader Animation */
+        .loader-blind {
+            animation: blindReveal 1.2s cubic-bezier(0.77, 0, 0.175, 1) forwards;
+        }
+        @keyframes blindReveal {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(-100%); }
+        }
+
+        /* Image Hover Zoom */
+        .group:hover .img-zoom {
+            transform: scale(1.05);
+        }
+        .img-zoom {
+            transition: transform 0.7s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+
+        /* Magnetic Button Effect (Simulated via CSS) */
+        .btn-magnetic:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+
+        /* Checkout Overlay Animation */
+        .checkout-enter-active, .checkout-leave-active {
+            transition: opacity 0.5s ease, transform 0.5s ease;
+        }
+        .checkout-enter-from, .checkout-leave-to {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        /* Progress Bar Animation */
+        @keyframes progress {
+            0% { transform: scaleX(0); }
+            100% { transform: scaleX(1); }
+        }
+        .animate-progress {
+            animation: progress 1.5s ease-out;
+        }
+
+        /* Marquee Animation */
+        @keyframes marquee {
+            0% { transform: translateX(100%); }
+            100% { transform: translateX(-100%); }
+        }
+        .animate-marquee {
+            animation: marquee 20s linear infinite;
+        }
+
+        /* Fade Up Animation */
+        @keyframes fadeUp {
+            0% { opacity: 0; transform: translateY(20px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-up {
+            animation: fadeUp 0.6s ease-out;
+        }
+    </style>
+</head>
+<body class="overflow-x-hidden relative">
+    <div id="app" v-cloak>
+        <!-- Loading Screen -->
+        <div v-if="isLoading" class="fixed inset-0 z-50 flex flex-col items-center justify-center bg-leather text-gold transition-transform duration-1000 ease-in-out" :class="{'translate-y-[-100%]': !loadingVisible}">
+            <h1 class="font-serif text-4xl md:text-6xl tracking-widest uppercase mb-4">PakMegaMart</h1>
+            <div class="w-24 h-[1px] bg-gold/50 relative overflow-hidden">
+                <div class="absolute inset-0 bg-gold animate-progress origin-left"></div>
+            </div>
+            <p class="font-sans text-xs mt-4 tracking-[0.3em] uppercase opacity-70">Crafting Experience</p>
+        </div>
+
+        <!-- Grain Overlay -->
+        <div class="fixed inset-0 pointer-events-none opacity-40 mix-blend-overlay bg-grain z-40 h-full w-full"></div>
+
+        <!-- Sticky Header (Minimalist) -->
+        <header class="fixed top-0 w-full z-30 px-6 py-6 transition-all duration-300" :class="{'bg-canvas/90 backdrop-blur-md dark:bg-dark-canvas/90 py-4 shadow-sm': scrolled, 'py-8': !scrolled}">
+            <div class="max-w-[1600px] mx-auto flex justify-between items-center">
+                <!-- Mobile Menu Icon -->
+                <button @click="mobileMenuOpen = true" class="md:hidden" :class="scrolled && !isDark ? 'text-ink' : 'text-white'">
+                    <i class="ph ph-list text-2xl"></i>
+                </button>
+
+                <!-- Desktop Nav -->
+                <nav class="hidden md:flex gap-8 font-sans text-xs tracking-[0.2em] uppercase font-medium" :class="scrolled && !isDark ? 'text-ink' : 'text-white'">
+                    <a href="#products" @click.prevent="scrollToProducts" class="hover:text-leather transition-colors">Shop</a>
+                    <a href="#philosophy" @click.prevent="scrollToProducts" class="hover:text-leather transition-colors">Atelier</a>
+                    <a href="#materials" @click.prevent="scrollToProducts" class="hover:text-leather transition-colors">Materials</a>
+                </nav>
+
+                <!-- Logo -->
+                <div class="absolute left-1/2 transform -translate-x-1/2 text-center">
+                    <h1 class="font-serif text-2xl md:text-3xl font-bold tracking-tight cursor-pointer text-transparent bg-clip-text bg-gradient-to-r from-white via-gold to-whiskey" @click="scrollToTop">
+                        PAKMEGAMART
+                    </h1>
+                </div>
+
+                <!-- Icons -->
+                <div class="flex items-center gap-6">
+                    <button @click="toggleTheme" class="hidden md:block hover:text-gold transition-colors" :class="scrolled && !isDark ? 'text-ink' : 'text-white'">
+                        <i :class="isDark ? 'ph-sun' : 'ph-moon'" class="ph text-xl"></i>
+                    </button>
+                    <div class="relative cursor-pointer group" @click="cartOpen = true">
+                        <span class="text-xs font-sans uppercase tracking-widest mr-2 hidden md:inline-block group-hover:text-leather transition-colors" :class="scrolled && !isDark ? 'text-ink' : 'text-white'">Bag</span>
+                        <span class="absolute -top-2 -right-2 bg-leather text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center font-sans" v-if="cartCount > 0">{{ cartCount }}</span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content (Smooth Scroll Wrapper) -->
+        <main>
+            <!-- 1. HERO SECTION (Updated: Full Screen Cover) -->
+            <section class="relative h-screen min-h-[700px] flex items-center justify-center overflow-hidden">
+                <!-- Background Image -->
+                <img 
+                    src="/Hero Page/heropageimage.jpg" 
+                    alt="Leather Craftsmanship" 
+                    class="absolute inset-0 w-full h-full object-cover z-0 img-zoom"
+                >
+                
+                <!-- Dark Overlay for Text Readability -->
+                <div class="absolute inset-0 bg-black/40 z-10"></div>
+
+                <!-- Gradient Overlay at bottom -->
+                <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent z-10"></div>
+
+                <!-- Text Content (Centered) -->
+                <div class="relative z-20 text-center px-6 max-w-4xl mx-auto overflow-visible">
+                    <p class="font-sans text-xs text-gold font-bold tracking-[0.4em] uppercase mb-6 animate-fade-up shadow-sm">Est. 2024 • Lahore</p>
+                    <h2 class="font-serif text-5xl md:text-7xl lg:text-9xl text-transparent bg-clip-text bg-gradient-to-r from-white via-gold to-whiskey mb-8 animate-fade-up leading-tight drop-shadow-2xl" style="animation-delay: 100ms;">
+                        PakMegaMart
+                    </h2>
+                    <p class="font-sans text-sm md:text-lg text-white/90 max-w-lg mx-auto leading-relaxed mb-12 animate-fade-up tracking-wide drop-shadow-md" style="animation-delay: 200ms;">
+                        Indulge in the allure of premium handcrafted leather. Where sophistication meets durability in every stitch.
+                    </p>
+                    <div class="animate-fade-up" style="animation-delay: 300ms;">
+                        <a 
+                            href="#products" 
+                            @click.prevent="scrollToProducts" 
+                            class="inline-block btn-magnetic bg-white text-ink px-12 py-4 font-sans text-xs tracking-[0.2em] uppercase transition-all duration-300 hover:bg-gold hover:text-white border-none shadow-2xl cursor-pointer no-underline"
+                        >
+                            Explore Collection
+                        </a>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 2. PHILOSOPHY (The "Texture" / Filler) -->
+            <section id="philosophy" class="py-24 md:py-32 px-6 bg-white dark:bg-[#151515] transition-colors duration-500">
+                <div class="max-w-4xl mx-auto text-center">
+                    <i class="ph ph-seal-check text-4xl text-gold mb-6 inline-block"></i>
+                    <h3 class="font-serif text-3xl md:text-5xl text-ink dark:text-white mb-8 leading-tight">
+                        "We don't just sell wallets. We sell the satisfaction of <span class="italic border-b-2 border-gold pb-1">holding quality</span>."
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-12 mt-16 font-sans text-sm tracking-wide">
+                        <div class="flex flex-col items-center">
+                            <span class="text-leather font-bold text-lg mb-2">01.</span>
+                            <h4 class="uppercase tracking-widest font-bold mb-2">Full Grain</h4>
+                            <p class="text-gray-500 dark:text-gray-400">Sourced from the finest tanneries. Ages beautifully with time.</p>
+                        </div>
+                        <div class="flex flex-col items-center">
+                            <span class="text-leather font-bold text-lg mb-2">02.</span>
+                            <h4 class="uppercase tracking-widest font-bold mb-2">RFID Shield</h4>
+                            <p class="text-gray-500 dark:text-gray-400">Modern protection hidden within classic craftsmanship.</p>
+                        </div>
+                        <div class="flex flex-col items-center">
+                            <span class="text-leather font-bold text-lg mb-2">03.</span>
+                            <h4 class="uppercase tracking-widest font-bold mb-2">Lifetime Promise</h4>
+                            <p class="text-gray-500 dark:text-gray-400">If the stitching breaks, we fix it. Forever.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 3. MARQUEE BANNER -->
+            <div class="bg-leather text-gold py-3 overflow-hidden whitespace-nowrap border-y border-gold/20">
+                <div class="inline-flex animate-marquee font-sans text-xs uppercase tracking-[0.4em] font-bold">
+                    <span class="mx-8">Free Shipping on Orders Over 5000 PKR</span> • 
+                    <span class="mx-8">Handcrafted in Lahore</span> • 
+                    <span class="mx-8">New "Oxblood" Collection Live</span> • 
+                    <span class="mx-8">Free Shipping on Orders Over 5000 PKR</span> • 
+                    <span class="mx-8">Handcrafted in Lahore</span> • 
+                    <span class="mx-8">New "Oxblood" Collection Live</span> • 
+                </div>
+            </div>
+
+            <!-- 4. PRODUCT SHOWCASE (Organized Grid) -->
+            <section id="products" class="py-24 px-6 md:px-12 max-w-[1800px] mx-auto bg-canvas dark:bg-dark-canvas transition-colors duration-500">
+                <div class="flex justify-between items-end mb-16 border-b border-gray-300 dark:border-gray-800 pb-4">
+                    <div>
+                        <p class="font-sans text-xs text-leather font-bold tracking-[0.3em] uppercase mb-2">Catalog</p>
+                        <h3 class="font-serif text-4xl text-ink dark:text-white">Signature Series</h3>
+                    </div>
+                    <div class="hidden md:flex gap-4">
+                         <span class="text-gray-400 text-xs uppercase tracking-widest">3 Items Available</span>
+                    </div>
+                </div>
+
+                <!-- The Grid (Staggered/Masonry feel using Grid) -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-16">
+                    <div 
+                        v-for="(product, index) in filteredProducts" 
+                        :key="product.id" 
+                        class="group cursor-pointer relative"
+                        :class="{'md:translate-y-16': index === 1}" 
+                        @click="openProduct(product)"
+                    >
+                        <div v-if="product.badge" class="absolute top-4 left-4 z-20 bg-white/90 dark:bg-black/80 px-3 py-1 text-[10px] uppercase tracking-widest font-sans font-bold border border-gold/30 backdrop-blur-sm">
+                            {{ product.badge }}
+                        </div>
+
+                        <!-- Image Container -->
+                        <div class="aspect-[3/4] w-full overflow-hidden bg-[#EAEAEA] relative mb-6 shadow-lg">
+                            <img 
+                                :src="product.image" 
+                                class="w-full h-full object-cover img-zoom grayscale-[20%] group-hover:grayscale-0 transition-all duration-700"
+                            >
+                            <div class="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                                <button class="bg-white text-ink px-6 py-3 font-sans text-xs uppercase tracking-widest hover:bg-leather hover:text-white transition-colors">
+                                    Quick View
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Info -->
+                        <div class="text-center md:text-left">
+                            <h4 class="font-serif text-xl mb-1 text-ink dark:text-white group-hover:text-leather transition-colors">{{ product.name }}</h4>
+                            <p class="font-sans text-xs text-gray-500 mb-2">{{ product.tagline }}</p>
+                            <div class="flex items-center justify-center md:justify-start gap-4">
+                                <div class="flex flex-col">
+                                    <span class="font-sans font-medium text-sm">PKR {{ product.price.toLocaleString() }}</span>
+                                    <span v-if="product.originalPrice" class="font-sans text-xs text-gray-500 line-through">PKR {{ product.originalPrice.toLocaleString() }}</span>
+                                    <span v-if="product.discount" class="font-sans text-xs text-green-600 font-bold">Save PKR {{ product.discount.toLocaleString() }}</span>
+                                </div>
+                                <div class="flex gap-2">
+                                    <div v-for="color in product.colors" :key="color" class="w-3 h-3 rounded-full border border-gray-300" :style="{backgroundColor: colorMap[color]}"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Spacer for Staggered Grid bottom -->
+                <div class="h-32 w-full"></div>
+            </section>
+
+            <!-- 5. VISUAL INTERLUDE (Materials) -->
+            <section id="materials" class="h-[60vh] relative flex items-center justify-center overflow-hidden">
+                <img src="/newasset.png" class="absolute inset-0 w-full h-full object-cover">
+                <div class="absolute inset-0 bg-black/50"></div>
+                <div class="relative z-10 text-center text-white px-6">
+                    <p class="font-sans text-xs font-bold tracking-[0.4em] uppercase mb-4 text-gold">The Workshop</p>
+                    <h2 class="font-serif text-4xl md:text-6xl mb-8">Cut from a Different Cloth.</h2>
+                    <button class="border border-white/30 text-white px-8 py-3 font-sans text-xs tracking-[0.2em] uppercase hover:bg-white hover:text-ink transition-all">Read Our Story</button>
+                </div>
+            </section>
+
+            <!-- 6. CUSTOMER REVIEWS -->
+            <section class="py-24 px-6 bg-canvas dark:bg-dark-canvas transition-colors duration-500">
+                <div class="max-w-6xl mx-auto text-center">
+                    <h3 class="font-serif text-3xl md:text-5xl mb-16 text-ink dark:text-white">What Our Customers Say</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                        <!-- Review 1 -->
+                        <div class="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-lg border border-gray-100 dark:border-gray-700">
+                            <div class="flex justify-center mb-4">
+                                <i class="ph ph-star text-gold text-lg"></i>
+                                <i class="ph ph-star text-gold text-lg"></i>
+                                <i class="ph ph-star text-gold text-lg"></i>
+                                <i class="ph ph-star text-gold text-lg"></i>
+                                <i class="ph ph-star text-gold text-lg"></i>
+                            </div>
+                            <p class="font-sans text-sm italic mb-4 text-gray-700 dark:text-gray-300">"Exceptional craftsmanship and attention to detail. This wallet has become my daily essential."</p>
+                            <p class="font-sans text-xs text-gray-500 dark:text-gray-400">- Ahmed Khan, Lahore</p>
+                        </div>
+                        <!-- Review 2 -->
+                        <div class="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-lg border border-gray-100 dark:border-gray-700">
+                            <div class="flex justify-center mb-4">
+                                <i class="ph ph-star text-gold text-lg"></i>
+                                <i class="ph ph-star text-gold text-lg"></i>
+                                <i class="ph ph-star text-gold text-lg"></i>
+                                <i class="ph ph-star text-gold text-lg"></i>
+                                <i class="ph ph-star text-gold text-lg"></i>
+                            </div>
+                            <p class="font-sans text-sm italic mb-4 text-gray-700 dark:text-gray-300">"The leather ages beautifully, and the RFID protection gives me peace of mind."</p>
+                            <p class="font-sans text-xs text-gray-500 dark:text-gray-400">- Fatima Ali, Karachi</p>
+                        </div>
+                        <!-- Review 3 -->
+                        <div class="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-lg border border-gray-100 dark:border-gray-700">
+                            <div class="flex justify-center mb-4">
+                                <i class="ph ph-star text-gold text-lg"></i>
+                                <i class="ph ph-star text-gold text-lg"></i>
+                                <i class="ph ph-star text-gold text-lg"></i>
+                                <i class="ph ph-star text-gold text-lg"></i>
+                                <i class="ph ph-star text-gold text-lg"></i>
+                            </div>
+                            <p class="font-sans text-sm italic mb-4 text-gray-700 dark:text-gray-300">"PakMegaMart delivers luxury at an accessible price. Highly recommend!"</p>
+                            <p class="font-sans text-xs text-gray-500 dark:text-gray-400">- Omar Sheikh, Islamabad</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 7. THE FAT FOOTER (Luxury Style) -->
+            <footer class="bg-ink dark:bg-[#0a0a0a] text-[#E5E5E5] pt-24 pb-10 px-6 md:px-20 border-t border-gold/10">
+                <div class="max-w-[1600px] mx-auto grid grid-cols-1 md:grid-cols-4 gap-16 mb-20">
+                    <!-- Brand Column -->
+                    <div class="col-span-1 md:col-span-1">
+                        <h2 class="font-serif text-3xl mb-6 text-gold">PAKMEGAMART</h2>
+                        <p class="font-sans text-sm text-white/60 leading-relaxed mb-6">
+                            Redefining the gentleman's carry through craftsmanship, integrity, and timeless design.
+                        </p>
+                        <div class="flex gap-4 text-white/60">
+                            <i class="ph ph-instagram-logo text-xl hover:text-gold cursor-pointer transition-colors"></i>
+                            <i class="ph ph-facebook-logo text-xl hover:text-gold cursor-pointer transition-colors"></i>
+                            <i class="ph ph-twitter-logo text-xl hover:text-gold cursor-pointer transition-colors"></i>
+                        </div>
+                    </div>
+
+                    <!-- Links Column -->
+                    <div class="col-span-1">
+                        <h4 class="font-sans text-xs font-bold tracking-[0.2em] uppercase mb-8 text-white">Shop</h4>
+                        <ul class="space-y-4 font-sans text-sm text-white/60">
+                            <li><a href="#" class="hover:text-gold transition-colors">All Wallets</a></li>
+                            <li><a href="#" class="hover:text-gold transition-colors">New Arrivals</a></li>
+                            <li><a href="#" class="hover:text-gold transition-colors">Accessories</a></li>
+                            <li><a href="#" class="hover:text-gold transition-colors">Gift Cards</a></li>
+                        </ul>
+                    </div>
+
+                    <!-- Help Column -->
+                    <div class="col-span-1">
+                        <h4 class="font-sans text-xs font-bold tracking-[0.2em] uppercase mb-8 text-white">Service</h4>
+                        <ul class="space-y-4 font-sans text-sm text-white/60">
+                            <li><a href="#" class="hover:text-gold transition-colors">Track Order</a></li>
+                            <li><a href="#" class="hover:text-gold transition-colors">Returns & Exchange</a></li>
+                            <li><a href="#" class="hover:text-gold transition-colors">Warranty Claim</a></li>
+                            <li><a href="#" class="hover:text-gold transition-colors">Contact Us</a></li>
+                        </ul>
+                    </div>
+
+                    <!-- Newsletter Column -->
+                    <div class="col-span-1">
+                        <h4 class="font-sans text-xs font-bold tracking-[0.2em] uppercase mb-8 text-white">The Journal</h4>
+                        <p class="font-sans text-sm text-white/60 mb-6">Join for early access to limited drops and atelier stories.</p>
+                        <div class="flex border-b border-white/20 pb-2">
+                            <input type="email" placeholder="Email Address" class="bg-transparent border-none outline-none w-full text-sm placeholder:text-white/30 focus:ring-0">
+                            <button class="text-xs uppercase tracking-widest text-gold hover:text-white transition-colors">Join</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bottom Bar -->
+                <div class="border-t border-white/10 pt-10 flex flex-col md:flex-row justify-between items-center text-xs font-sans text-white/40 tracking-wide">
+                    <p>&copy; 2024 PakMegaMart. All Rights Reserved.</p>
+                    <div class="flex gap-6 mt-4 md:mt-0">
+                        <a href="#" class="hover:text-white">Privacy Policy</a>
+                        <a href="#" class="hover:text-white">Terms of Service</a>
+                    </div>
+                </div>
+            </footer>
+        </main>
+
+        <!-- CART DRAWER -->
+        <div 
+            class="fixed inset-0 z-[60] transition-opacity duration-300"
+            :class="cartOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'"
+        >
+            <!-- Backdrop -->
+            <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="cartOpen = false"></div>
+            
+            <!-- Drawer -->
+            <div 
+                class="absolute right-0 top-0 h-full w-full md:w-[450px] bg-white dark:bg-[#111] shadow-2xl transform transition-transform duration-500 ease-out flex flex-col"
+                :class="cartOpen ? 'translate-x-0' : 'translate-x-full'"
+            >
+                <div class="p-6 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center">
+                    <h3 class="font-serif text-2xl text-ink dark:text-white">Your Selection</h3>
+                    <button @click="cartOpen = false"><i class="ph ph-x text-xl"></i></button>
+                </div>
+
+                <div class="flex-1 overflow-y-auto p-6">
+                    <div v-if="cart.length === 0" class="h-full flex flex-col items-center justify-center text-center opacity-50">
+                        <i class="ph ph-shopping-bag text-4xl mb-4"></i>
+                        <p class="font-sans text-sm tracking-wide">Your bag is empty.</p>
+                    </div>
+
+                    <div v-else class="space-y-6">
+                        <div v-for="(item, i) in cart" :key="i" class="flex gap-4">
+                            <img :src="item.image" class="w-20 h-24 object-cover bg-gray-100">
+                            <div class="flex-1">
+                                <h4 class="font-serif text-lg text-ink dark:text-white">{{ item.name }}</h4>
+                                <p class="text-xs font-sans text-gray-500 mb-1 capitalize">{{ item.selectedColor }} Leather</p>
+                                <p class="text-sm font-medium">PKR {{ item.price.toLocaleString() }}</p>
+                            </div>
+                            <button @click="removeFromCart(i)" class="text-gray-400 hover:text-red-500 self-start"><i class="ph ph-trash"></i></button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="p-6 border-t border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-[#151515]">
+                    <div class="flex justify-between mb-4 font-sans text-sm">
+                        <span class="text-gray-500">Subtotal</span>
+                        <span class="font-bold">PKR {{ cartTotal.toLocaleString() }}</span>
+                    </div>
+                    <p class="text-[10px] text-gray-400 mb-6 text-center">Shipping & taxes calculated at checkout.</p>
+                    
+                    <button 
+                        @click="openCheckout" 
+                        class="w-full bg-ink dark:bg-white text-white dark:text-black py-4 font-sans text-sm font-bold tracking-widest uppercase flex items-center justify-center gap-2 hover:bg-leather hover:text-white transition-colors"
+                        :disabled="cart.length === 0"
+                        :class="{'opacity-50 cursor-not-allowed': cart.length === 0}"
+                    >
+                        Secure Checkout
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- CHECKOUT OVERLAY (New Feature) -->
+        <transition name="checkout">
+            <div v-if="isCheckoutOpen" class="fixed inset-0 z-[80] bg-canvas dark:bg-[#0a0a0a] overflow-y-auto">
+                <div class="max-w-3xl mx-auto min-h-screen py-12 px-6 flex flex-col">
+                    
+                    <!-- Header -->
+                    <div class="flex justify-between items-center mb-10 pb-6 border-b border-gray-200 dark:border-gray-800">
+                        <h2 class="font-serif text-3xl md:text-4xl text-ink dark:text-white">Secure Checkout</h2>
+                        <button @click="isCheckoutOpen = false" class="text-sm uppercase tracking-widest hover:text-leather">Close</button>
+                    </div>
+
+                    <!-- SUCCESS STATE -->
+                    <div v-if="checkoutStep === 'success'" class="flex-1 flex flex-col items-center justify-center text-center animate-fade-up">
+                        <div class="w-20 h-20 rounded-full border-2 border-gold flex items-center justify-center text-gold text-4xl mb-6">
+                            <i class="ph ph-check"></i>
+                        </div>
+                        <h3 class="font-serif text-4xl text-ink dark:text-white mb-2">Order Confirmed</h3>
+                        <p class="font-sans text-sm tracking-widest uppercase text-gray-500 mb-8">Order #{{ orderId }}</p>
+                        
+                        <div class="bg-white dark:bg-[#111] p-8 max-w-md w-full shadow-lg border-t-4 border-leather mb-8">
+                            <p class="font-sans text-sm leading-relaxed mb-4 text-gray-600 dark:text-gray-300">
+                                Thank you, <span class="font-bold text-ink dark:text-white">{{ customerDetails.name }}</span>.
+                            </p>
+                            
+                            <div v-if="paymentMethod === 'cod'">
+                                <p class="text-sm text-gray-500">Your order has been placed successfully via Cash on Delivery. Our team will verify your order via phone shortly.</p>
+                            </div>
+
+                            <div v-else>
+                                <p class="text-sm text-gray-500 mb-4">To finalize your order, please transfer <strong>PKR {{ cartTotal.toLocaleString() }}</strong> to the account below and send proof.</p>
+                                <div class="bg-gray-100 dark:bg-[#222] p-4 text-left text-xs font-mono mb-4 text-gray-600 dark:text-gray-400">
+                                    Meezan Bank<br>
+                                    Title: MUHAMMAD AHMAD<br>
+                                    AC: 02780113523044<br>
+                                    IBAN: PK98MEZN0002780113523044<br>
+                                    Branch: Avian Chowk Br Lahore
+                                </div>
+                                <button @click="sendProofWhatsApp" class="w-full bg-[#25D366] text-white py-3 font-sans text-xs font-bold tracking-widest uppercase flex items-center justify-center gap-2 hover:bg-[#20bd5a]">
+                                    <i class="ph ph-whatsapp-logo text-lg"></i> Send Payment Proof
+                                </button>
+                            </div>
+                        </div>
+
+                        <button @click="closeCheckout" class="text-xs uppercase tracking-widest underline underline-offset-4 hover:text-leather">Return to Boutique</button>
+                    </div>
+
+                    <!-- FORM STATE -->
+                    <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-12">
+                        <!-- Left: Form -->
+                        <div>
+                            <h4 class="font-sans text-xs font-bold tracking-[0.2em] uppercase mb-6 text-gold">01. Shipping Details</h4>
+                            <div class="space-y-6">
+                                <div>
+                                    <label class="block text-[10px] uppercase tracking-widest mb-2 text-gray-500">Full Name</label>
+                                    <input v-model="customerDetails.name" type="text" class="w-full bg-transparent border-b border-gray-300 dark:border-gray-700 py-2 focus:border-gold outline-none transition-colors text-ink dark:text-white" placeholder="e.g. Ali Khan">
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] uppercase tracking-widest mb-2 text-gray-500">Phone Number</label>
+                                    <input v-model="customerDetails.phone" type="tel" class="w-full bg-transparent border-b border-gray-300 dark:border-gray-700 py-2 focus:border-gold outline-none transition-colors text-ink dark:text-white" placeholder="0300-1234567">
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] uppercase tracking-widest mb-2 text-gray-500">Email</label>
+                                    <input v-model="customerDetails.email" type="email" class="w-full bg-transparent border-b border-gray-300 dark:border-gray-700 py-2 focus:border-gold outline-none transition-colors text-ink dark:text-white" placeholder="you@example.com">
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] uppercase tracking-widest mb-2 text-gray-500">Delivery Address</label>
+                                    <input v-model="customerDetails.address" type="text" class="w-full bg-transparent border-b border-gray-300 dark:border-gray-700 py-2 focus:border-gold outline-none transition-colors text-ink dark:text-white" placeholder="House #, Street, Area">
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] uppercase tracking-widest mb-2 text-gray-500">City</label>
+                                    <input v-model="customerDetails.city" type="text" class="w-full bg-transparent border-b border-gray-300 dark:border-gray-700 py-2 focus:border-gold outline-none transition-colors text-ink dark:text-white" placeholder="Lahore">
+                                </div>
+                            </div>
+
+                            <h4 class="font-sans text-xs font-bold tracking-[0.2em] uppercase mt-12 mb-6 text-gold">02. Payment Method</h4>
+                            <div class="space-y-4">
+                                <label class="flex items-center gap-4 p-4 border border-gray-200 dark:border-gray-800 cursor-pointer hover:border-leather transition-colors group" :class="{'border-leather bg-leather/5': paymentMethod === 'cod'}">
+                                    <div class="w-4 h-4 rounded-full border border-gray-400 flex items-center justify-center">
+                                        <div v-if="paymentMethod === 'cod'" class="w-2 h-2 rounded-full bg-leather"></div>
+                                    </div>
+                                    <input type="radio" value="cod" v-model="paymentMethod" class="hidden">
+                                    <div>
+                                        <span class="block font-serif text-lg text-ink dark:text-white">Cash on Delivery</span>
+                                        <span class="text-xs text-gray-500">Pay via cash upon receipt.</span>
+                                    </div>
+                                </label>
+
+                                <label class="flex items-center gap-4 p-4 border border-gray-200 dark:border-gray-800 cursor-pointer hover:border-leather transition-colors group" :class="{'border-leather bg-leather/5': paymentMethod === 'bank'}">
+                                    <div class="w-4 h-4 rounded-full border border-gray-400 flex items-center justify-center">
+                                        <div v-if="paymentMethod === 'bank'" class="w-2 h-2 rounded-full bg-leather"></div>
+                                    </div>
+                                    <input type="radio" value="bank" v-model="paymentMethod" class="hidden">
+                                    <div>
+                                        <span class="block font-serif text-lg text-ink dark:text-white">Bank Transfer</span>
+                                        <span class="text-xs text-gray-500">Meezan Bank. Send proof via WhatsApp.</span>
+                                    </div>
+                                </label>
+                                
+                                <div v-if="paymentMethod === 'bank'" class="ml-8 p-4 bg-gray-100 dark:bg-[#151515] text-xs font-mono text-gray-600 dark:text-gray-400 border-l-2 border-gold animate-fade-up">
+                                    <p class="mb-1"><strong>Bank:</strong> Meezan Bank</p>
+                                    <p class="mb-1"><strong>Title:</strong> MUHAMMAD AHMAD</p>
+                                    <p class="mb-1"><strong>Account:</strong> 02780113523044</p>
+                                    <p class="mb-1"><strong>IBAN:</strong> PK98MEZN0002780113523044</p>
+                                    <p class="mb-1"><strong>Branch:</strong> Avian Chowk Br Lahore</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right: Summary -->
+                        <div class="bg-gray-50 dark:bg-[#111] p-8 h-fit">
+                            <h4 class="font-sans text-xs font-bold tracking-[0.2em] uppercase mb-6 border-b border-gray-200 dark:border-gray-800 pb-4">Order Summary</h4>
+                            <div class="space-y-4 mb-6 max-h-60 overflow-y-auto pr-2">
+                                <div v-for="(item, i) in cart" :key="i" class="flex justify-between items-start text-sm">
+                                    <div>
+                                        <p class="font-serif text-ink dark:text-white">{{ item.name }}</p>
+                                        <p class="text-xs text-gray-500 capitalize">{{ item.selectedColor }}</p>
+                                    </div>
+                                    <p class="font-mono text-gray-600 dark:text-gray-400">PKR {{ item.price.toLocaleString() }}</p>
+                                </div>
+                            </div>
+                            <div class="border-t border-gray-200 dark:border-gray-800 pt-4 mb-8">
+                                <div class="flex justify-between items-center text-lg font-bold text-ink dark:text-white">
+                                    <span>Total</span>
+                                    <span>PKR {{ cartTotal.toLocaleString() }}</span>
+                                </div>
+                                <p class="text-[10px] text-gray-400 mt-2 text-right">Includes all taxes & delivery</p>
+                            </div>
+                            
+                            <button 
+                                @click="processOrder" 
+                                class="w-full bg-ink dark:bg-white text-white dark:text-black py-4 font-sans text-xs font-bold tracking-[0.2em] uppercase hover:bg-leather transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                :disabled="!isFormValid"
+                            >
+                                Place Order
+                            </button>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </transition>
+
+        <!-- PRODUCT MODAL -->
+        <div v-if="activeProduct" class="fixed inset-0 z-[70] flex items-center justify-center p-4">
+            <div class="absolute inset-0 bg-black/80 backdrop-blur-md" @click="activeProduct = null"></div>
+            <div class="relative bg-white dark:bg-[#111] w-full max-w-4xl h-[80vh] md:h-auto overflow-y-auto md:overflow-visible grid grid-cols-1 md:grid-cols-2 gap-0 shadow-2xl animate-fade-up">
+                <button @click="activeProduct = null" class="absolute top-4 right-4 z-10 bg-white/50 rounded-full p-2"><i class="ph ph-x text-xl"></i></button>
+                
+                <!-- Gallery -->
+                <div class="bg-gray-100 relative h-[400px] md:h-[500px]">
+                    <img :src="activeProduct.id === 1 ? `/Genuine Leather Bifold Wallet/Genuine Leather Bifold Wallet ${selectedColor === 'lightgray' ? 'Light Gray' : selectedColor.charAt(0).toUpperCase() + selectedColor.slice(1)}.png` : activeProduct.id === 2 ? `/Pebbled Leather Long Wallet/Pebbled Leather Long Wallet ${selectedColor.charAt(0).toUpperCase() + selectedColor.slice(1)}.png` : activeProduct.id === 3 ? `/Vintage Leather Bifold Wallet/Vintage Leather Bifold Wallet ${selectedColor.charAt(0).toUpperCase() + selectedColor.slice(1)}.jpg` : activeProduct.image" class="w-full h-full object-cover">
+                </div>
+
+                <!-- Details -->
+                <div class="p-8 md:p-12 flex flex-col justify-center">
+                    <p class="font-sans text-xs text-gold font-bold tracking-[0.2em] uppercase mb-2">{{ activeProduct.category }}</p>
+                    <h2 class="font-serif text-3xl md:text-4xl text-ink dark:text-white mb-4">{{ activeProduct.name }}</h2>
+                    <div class="mb-6">
+                        <p class="font-sans text-xl font-medium">PKR {{ activeProduct.price.toLocaleString() }}</p>
+                        <p v-if="activeProduct.originalPrice" class="font-sans text-sm text-gray-500 line-through">PKR {{ activeProduct.originalPrice.toLocaleString() }}</p>
+                        <p v-if="activeProduct.discount" class="font-sans text-sm text-green-600 font-bold">Save PKR {{ activeProduct.discount.toLocaleString() }}</p>
+                    </div>
+                    <p class="font-sans text-sm text-gray-500 leading-relaxed mb-8">{{ activeProduct.desc }}</p>
+
+                    <!-- Color Select -->
+                    <div class="mb-8">
+                        <p class="text-xs uppercase tracking-widest mb-3 font-bold">Select Leather</p>
+                        <div class="flex gap-3">
+                            <button 
+                                v-for="color in activeProduct.colors" 
+                                :key="color"
+                                @click="selectedColor = color"
+                                class="w-8 h-8 rounded-full border-2 transition-all flex items-center justify-center"
+                                :class="selectedColor === color ? 'border-ink dark:border-white scale-110' : 'border-transparent'"
+                            >
+                                <div class="w-6 h-6 rounded-full" :style="{backgroundColor: colorMap[color]}"></div>
+                            </button>
+                        </div>
+                    </div>
+
+                    <button @click="addToCart(activeProduct)" class="w-full bg-ink dark:bg-white text-white dark:text-black py-4 font-sans text-xs font-bold tracking-[0.2em] uppercase hover:bg-leather transition-colors">
+                        Add to Bag
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 📞 WHATSAPP FLOATING BUTTON (Minimalist Professional) -->
+        <a 
+            href="https://wa.me/923001234567" 
+            target="_blank" 
+            class="fixed bottom-6 right-6 z-[45] bg-ink dark:bg-white text-white dark:text-black w-14 h-14 rounded-full shadow-2xl hover:scale-110 transition-transform flex items-center justify-center border border-white/10 group"
+            aria-label="Contact us on WhatsApp"
+        >
+            <i class="ph ph-whatsapp-logo text-3xl group-hover:text-[#25D366] transition-colors duration-300"></i>
+        </a>
+
+    </div>
+
+    <script>
+        const { createApp, ref, computed, onMounted, nextTick } = Vue;
+
+        createApp({
+            setup() {
+                const isLoading = ref(true);
+                const loadingVisible = ref(true);
+                const scrolled = ref(false);
+                const mobileMenuOpen = ref(false);
+                const cartOpen = ref(false);
+                const isDark = ref(false);
+                const activeProduct = ref(null);
+                const selectedColor = ref(null);
+                const filter = ref('all');
+                
+                // Checkout State
+                const isCheckoutOpen = ref(false);
+                const checkoutStep = ref('form'); // form | success
+                const paymentMethod = ref('cod');
+                const orderId = ref(null);
+                const customerDetails = ref({
+                    name: '',
+                    email: '',
+                    phone: '',
+                    address: '',
+                    city: ''
+                });
+
+                // Cart Logic
+                const cart = ref([]);
+
+                // Data
+                const colorMap = {
+                    'oxblood': '#4A2C2A',
+                    'black': '#1A1A1A',
+                    'tan': '#8B5A2B',
+                    'navy': '#1e293b',
+                    'vintage': '#8D6E63',
+                    'brown': '#8B4513',
+                    'red': '#DC143C',
+                    'gray': '#808080',
+                    'lightgray': '#D3D3D3'
+                };
+
+                const products = ref([
+                    {
+                        id: 1,
+                        name: "Genuine Leather Bifold Wallet",
+                        tagline: "The Everyday Standard",
+                        price: 999,
+                        originalPrice: 1300,
+                        discount: 301,
+                        category: "bifold",
+                        image: "/Genuine Leather Bifold Wallet/Genuine Leather Bifold Wallet Black.png",
+                        colors: ['black', 'brown', 'gray', 'lightgray'],
+                        badge: "Best Seller",
+                        desc: "A classic re-imagined. Crafted from genuine full-grain cowhide that develops a unique patina over time. Features 6 card slots, a divided cash compartment, and hidden slip pockets."
+                    },
+                    {
+                        id: 2,
+                        name: "Pebbled Leather Long Wallet",
+                        tagline: "Executive Capacity",
+                        price: 1499,
+                        originalPrice: 2000,
+                        discount: 501,
+                        category: "long",
+                        image: "/Pebbled Leather Long Wallet/Pebbled Leather Long Wallet Black.png",
+                        colors: ['black', 'brown', 'gray'],
+                        badge: "New Arrival",
+                        desc: "For those who require more. The pebbled texture offers superior scratch resistance while providing ample space for bills, 12 cards, and your phone. Slim profile despite the capacity."
+                    },
+                    {
+                        id: 3,
+                        name: "Vintage Leather Bifold Wallet",
+                        tagline: "Rugged Heritage",
+                        price: 999,
+                        originalPrice: 1300,
+                        discount: 301,
+                        category: "bifold",
+                        image: "/Vintage Leather Bifold Wallet/Vintage Leather Bifold Wallet Black.jpg",
+                        colors: ['black', 'brown', 'gray'],
+                        badge: "Limited Edition",
+                        desc: "Hand-finished with a distressed look right out of the box. This wallet feels like an old friend from day one. Unlined interior showcases the raw beauty of the hide."
+                    }
+                ]);
+
+                // Computed
+                const filteredProducts = computed(() => {
+                    if (filter.value === 'all') return products.value;
+                    return products.value.filter(p => p.category === filter.value);
+                });
+
+                const cartCount = computed(() => cart.value.length);
+                const cartTotal = computed(() => cart.value.reduce((acc, item) => acc + item.price, 0));
+                
+                const isFormValid = computed(() => {
+                    return customerDetails.value.name.trim() && 
+                           customerDetails.value.email &&
+                           customerDetails.value.phone.trim() && 
+                           customerDetails.value.address.trim() && 
+                           customerDetails.value.city.trim();
+                });
+
+                // Methods
+                const openCheckout = () => {
+                    cartOpen.value = false;
+                    isCheckoutOpen.value = true;
+                    checkoutStep.value = 'form';
+                };
+
+                const processOrder = async () => {
+                    try {
+                        const response = await fetch('/api/orders', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                customerDetails: customerDetails.value,
+                                cart: cart.value,
+                                paymentMethod: paymentMethod.value
+                            })
+                        });
+                        const data = await response.json();
+                        if (data.success) {
+                            orderId.value = data.orderId;
+                            checkoutStep.value = 'success';
+                            // Send emails to admin and customer via EmailJS (configure IDs below)
+                            try {
+                                await sendEmails();
+                            } catch (e) {
+                                console.error('Email send failed:', e);
+                            }
+                        } else {
+                            alert('Order failed. Please try again.');
+                        }
+                    } catch (error) {
+                        console.error('Order error:', error);
+                        alert('Network error. Please try again.');
+                    }
+                };
+                
+                const closeCheckout = () => {
+                    isCheckoutOpen.value = false;
+                    cart.value = []; // Clear cart on exit of success screen
+                    // Reset form
+                    customerDetails.value = { name: '', email: '', phone: '', address: '', city: '' };
+                };
+
+                const sendProofWhatsApp = () => {
+                    let message = `Hi PakMegaMart, I placed Order #${orderId.value} via Bank Transfer.\n\n`;
+                    message += `Name: ${customerDetails.value.name}\n`;
+                    message += `Total Amount: PKR ${cartTotal.value.toLocaleString()}\n\n`;
+                    message += `Attaching my payment proof for verification.`;
+                    window.open(`https://wa.me/923001234567?text=${encodeURIComponent(message)}`, '_blank');
+                };
+
+                const sendEmails = async () => {
+                    const SERVICE_ID = EMAILJS_CONFIG.serviceId;
+                    const TEMPLATE_ADMIN = EMAILJS_CONFIG.templateAdmin;
+                    const TEMPLATE_CUSTOMER = EMAILJS_CONFIG.templateCustomer;
+
+                    const templateParams = {
+                        order_id: orderId.value,
+                        customer_name: customerDetails.value.name,
+                        customer_email: customerDetails.value.email,
+                        customer_phone: customerDetails.value.phone,
+                        customer_address: `${customerDetails.value.address}, ${customerDetails.value.city}`,
+                        total_amount: `PKR ${cartTotal.value.toLocaleString()}`,
+                        payment_method: paymentMethod.value === 'cod' ? 'Cash on Delivery' : 'Bank Transfer',
+                        show_cod: paymentMethod.value === 'cod' ? 'Cash on Delivery' : '',
+                        show_bank: paymentMethod.value === 'bank' ? 'Bank Transfer' : '',
+                        cart_items: cart.value.map(i => `${i.name} - ${i.selectedColor} - PKR ${i.price}`).join('\n')
+                    };
+
+                    try {
+                        if (typeof emailjs === 'undefined') throw new Error('EmailJS SDK not loaded');
+                        if (SERVICE_ID && TEMPLATE_ADMIN) await emailjs.send(SERVICE_ID, TEMPLATE_ADMIN, templateParams);
+                        if (SERVICE_ID && TEMPLATE_CUSTOMER) await emailjs.send(SERVICE_ID, TEMPLATE_CUSTOMER, templateParams);
+                    } catch (err) {
+                        console.error('EmailJS send error:', err);
+                        throw err;
+                    }
+                };
+
+                // Existing Methods
+                const toggleTheme = () => {
+                    isDark.value = !isDark.value;
+                    if (isDark.value) {
+                        document.documentElement.classList.add('dark');
+                    } else {
+                        document.documentElement.classList.remove('dark');
+                    }
+                };
+
+                const openProduct = (product) => {
+                    activeProduct.value = product;
+                    selectedColor.value = product.colors[0];
+                };
+
+                const addToCart = (product) => {
+                    cart.value.push({
+                        ...product,
+                        selectedColor: selectedColor.value
+                    });
+                    activeProduct.value = null;
+                    cartOpen.value = true;
+                };
+
+                const removeFromCart = (index) => {
+                    cart.value.splice(index, 1);
+                };
+
+                const scrollToProducts = () => {
+                    document.getElementById('products').scrollIntoView({ behavior: 'smooth' });
+                };
+
+                const scrollToTop = () => {
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                };
+
+                // EmailJS config fetched from server
+                let EMAILJS_CONFIG = {
+                    publicKey: null,
+                    serviceId: null,
+                    templateAdmin: null,
+                    templateCustomer: null
+                };
+
+                // Lifecycle
+                onMounted(() => {
+                    // Fetch EmailJS configuration from server
+                    fetch('/api/config')
+                        .then(r => r.json())
+                        .then(cfg => {
+                            EMAILJS_CONFIG.publicKey = cfg.emailjsPublicKey;
+                            EMAILJS_CONFIG.serviceId = cfg.serviceId;
+                            EMAILJS_CONFIG.templateAdmin = cfg.templateAdmin;
+                            EMAILJS_CONFIG.templateCustomer = cfg.templateCustomer;
+                            if (typeof emailjs !== 'undefined' && EMAILJS_CONFIG.publicKey) {
+                                try { emailjs.init(EMAILJS_CONFIG.publicKey); } catch (e) { /* ignore */ }
+                            }
+                        })
+                        .catch(err => console.warn('Could not load EmailJS config:', err));
+
+                    // Lenis Smooth Scroll Setup
+                    const lenis = new Lenis({
+                        duration: 1.2,
+                        easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+                        direction: 'vertical',
+                        gestureDirection: 'vertical',
+                        smooth: true,
+                    });
+
+                    function raf(time) {
+                        lenis.raf(time);
+                        requestAnimationFrame(raf);
+                    }
+                    requestAnimationFrame(raf);
+
+                    // Navbar scroll effect
+                    window.addEventListener('scroll', () => {
+                        scrolled.value = window.scrollY > 50;
+                    });
+
+                    // Remove Loader
+                    setTimeout(() => {
+                        loadingVisible.value = false;
+                        setTimeout(() => isLoading.value = false, 1000);
+                    }, 1500);
+                });
+
+                return {
+                    isLoading, loadingVisible, scrolled, mobileMenuOpen, cartOpen, isDark,
+                    activeProduct, selectedColor, filter, cart, products,
+                    filteredProducts, cartCount, cartTotal, colorMap,
+                    toggleTheme, openProduct, addToCart, removeFromCart,
+                    scrollToProducts, scrollToTop,
+                    // Checkout
+                    isCheckoutOpen, checkoutStep, paymentMethod, orderId, customerDetails, isFormValid,
+                    openCheckout, processOrder, closeCheckout, sendProofWhatsApp, sendEmails
+                };
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>
