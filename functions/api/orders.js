@@ -1,17 +1,14 @@
-import { createClient } from '@supabase/supabase-js'; // If using Supabase for DB
-
-// In-memory storage for demo (use a database in production)
-let orders = [];
-let orderIdCounter = 1000;
+import { createClient } from '@supabase/supabase-js';
 
 export async function onRequest(context) {
   const { request, env } = context;
-  const url = new URL(request.url);
+
+  const supabase = createClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY);
 
   if (request.method === 'POST') {
     try {
       const { customerDetails, cart, paymentMethod } = await request.json();
-      const orderId = `NG-${orderIdCounter++}`;
+      const orderId = `NG-${Date.now()}`;
       const order = {
         id: orderId,
         customer: customerDetails,
@@ -19,11 +16,11 @@ export async function onRequest(context) {
         paymentMethod,
         total: cart.reduce((sum, item) => sum + item.price, 0),
         status: 'pending',
-        date: new Date()
+        date: new Date().toISOString()
       };
-      orders.push(order);
 
-      // Here you could send emails or save to DB
+      const { error } = await supabase.from('orders').insert(order);
+      if (error) throw error;
 
       return new Response(JSON.stringify({ success: true, orderId, message: 'Order placed successfully!' }), {
         headers: { 'Content-Type': 'application/json' }
@@ -35,10 +32,19 @@ export async function onRequest(context) {
       });
     }
   } else if (request.method === 'GET') {
-    // For admin, but in production add authentication
-    return new Response(JSON.stringify(orders), {
-      headers: { 'Content-Type': 'application/json' }
-    });
+    try {
+      const { data: orders, error } = await supabase.from('orders').select('*');
+      if (error) throw error;
+
+      return new Response(JSON.stringify(orders), {
+        headers: { 'Content-Type': 'application/json' }
+      });
+    } catch (error) {
+      return new Response(JSON.stringify({ error: 'Failed to fetch orders' }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
   } else {
     return new Response('Method not allowed', { status: 405 });
   }
