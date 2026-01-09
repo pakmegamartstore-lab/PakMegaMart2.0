@@ -1,23 +1,4 @@
 name = "pakmegamart-2-0"
 compatibility_date = "2024-01-01"
-pages_build_output_dir = "."
 
-[env.production]
-routes = [
-  { pattern = "/api/*", zone_name = "yourdomain.com" }  # Replace with your actual domain
-]
-
-[[pages_build_config]]
-# Build command (none needed for static)
-build_command = ""
-# Build output directory
-destination_dir = "."
-# Root directory
-root_dir = "."
-
-# Environment variables (set these in Cloudflare dashboard)
-[vars]
-EMAILJS_PUBLIC_KEY = ""
-EMAILJS_SERVICE_ID = ""
-EMAILJS_TEMPLATE_ADMIN = ""
-EMAILJS_TEMPLATE_CUSTOMER = ""
+# Environment variables are set in Cloudflare Pages dashboard, not here
