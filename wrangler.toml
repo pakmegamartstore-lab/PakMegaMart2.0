@@ -1,4 +1,0 @@
-name = "pakmegamart-2-0"
-compatibility_date = "2024-01-01"
-
-# Environment variables are set in Cloudflare Pages dashboard, not here
